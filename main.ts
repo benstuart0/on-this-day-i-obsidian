@@ -1,85 +1,39 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { MarkdownView,  Notice, Plugin, TFolder } from 'obsidian';
+import OpenAI from 'openai';
+import { OnThisDayPluginSettings, DEFAULT_SETTINGS } from 'src/OnThisDayPluginSettings';
+import OnThisDaySettingTab from 'src/OnThisDaySettingTab';
+import aiPrompt from 'src/prompt';
 
-// Remember to rename these classes and interfaces!
-
-interface MyPluginSettings {
-	mySetting: string;
-}
-
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
-}
-
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+//
+// Main Plugin Class
+//
+export default class OnThisDayPlugin extends Plugin {
+	settings: OnThisDayPluginSettings;
 
 	async onload() {
+		console.log('Loading On This Day AI plugin');
 		await this.loadSettings();
+		this.addSettingTab(new OnThisDaySettingTab(this.app, this));
 
-		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
-
-		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
+			id: 'on-this-day-ai:on-this-day-placeholder',
+			name: 'Add On This Day AI Placeholder',
+			callback: async () => {
+				await this.addPlaceholder();
+			},
 		});
-		// This adds an editor command that can perform some operation on the current editor instance
+
 		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
+			id: 'on-this-day-ai:generate-date-summaries',
+			name: 'Generate Through The Years',
+			callback: async () => {
+				await this.generateDateSummaries();
+			},
 		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-			}
-		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
-	onunload() {
-
+	async onunload() {
+		console.log('Unloading On This Day AI plugin');
 	}
 
 	async loadSettings() {
@@ -89,46 +43,236 @@ export default class MyPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
-}
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
+	//
+	// Utility Functions
+	//
+
+	// Check if a string matches the expected date format ("MMMM D, YYYY")
+	isValidDateString(dateString: string): boolean {
+		const regex =
+			/^(January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}, \d{4}$/;
+		return regex.test(dateString);
 	}
 
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
+	// Parse a date string (assumes "MMMM D, YYYY")
+	parseDateFromString(dateString: string, format: string): Date | null {
+		// This regex is based on the expected format "MMMM D, YYYY"
+		const regex =
+			/^(January|February|March|April|May|June|July|August|September|October|November|December) (\d{1,2}), (\d{4})$/;
+		const match = dateString.match(regex);
+		if (match) {
+			const monthName = match[1];
+			const day = parseInt(match[2]);
+			const year = parseInt(match[3]);
+			const date = new Date(`${monthName} ${day}, ${year}`);
+			if (!isNaN(date.getTime())) {
+				return date;
+			}
+		}
+		return null;
 	}
 
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
+	//
+	// Main Function: Generate Date Summaries
+	//
+	async generateDateSummaries() {
+		// 1. Ensure the command is run from a file with a valid date as its title.
+		const activeFile = this.app.workspace.getActiveFile();
+		if (!activeFile) {
+			new Notice('No active file found.');
+			return;
+		}
+		if (!this.isValidDateString(activeFile.basename)) {
+			new Notice(`This command must be run from a file with a date title in the format ${this.settings.dateFormat}`);
+			return;
+		}
+
+		const inputDateString = activeFile.basename;
+
+		// 2. Parse the input date to extract month and day (ignoring the year)
+		const parsedDate = this.parseDateFromString(inputDateString, this.settings.dateFormat);
+		if (!parsedDate) {
+			new Notice('Could not parse the date from the file title.');
+			return;
+		}
+		const month = parsedDate.getMonth(); // 0-based month
+		const day = parsedDate.getDate();
+		const currentYear = parsedDate.getFullYear();
+
+		// 3. Search through the daily notes folder for matching files
+		const folder = this.app.vault.getAbstractFileByPath(this.settings.dailyNotesFolder);
+		if (!folder || !(folder instanceof TFolder)) {
+			new Notice('Daily notes folder not found.');
+			return;
+		}
+
+		// Get all Markdown files in the daily notes folder
+		const files = this.app.vault
+			.getFiles()
+			.filter(
+				(file) =>
+					file.path.startsWith(this.settings.dailyNotesFolder) && file.extension === 'md'
+			);
+
+		// Build a map: year => concatenated content of matching daily notes
+		let yearToContent: Record<string, string> = {};
+		for (const file of files) {
+			const fileDate = this.parseDateFromString(file.basename, this.settings.dateFormat);
+			if (!fileDate) continue;
+			if (fileDate.getMonth() === month && fileDate.getDate() === day && fileDate.getFullYear() != currentYear) {
+				const yearStr = fileDate.getFullYear().toString();
+				const content = await this.app.vault.read(file);
+				if (yearToContent[yearStr]) {
+					yearToContent[yearStr] += '\n' + content;
+				} else {
+					yearToContent[yearStr] = content;
+				}
+			}
+		}
+
+		if (Object.keys(yearToContent).length === 0) {
+			new Notice('No matching daily notes found for that date.');
+			return;
+		}
+
+		// 4. Construct the API prompt that instructs GPT-4 to produce a JSON summary mapping.
+		const prompt = this.constructPrompt(yearToContent, inputDateString);
+
+		// 5. Show a loading indicator (persistent notice) until work is done.
+		const loadingNotice = new Notice("Generating summaries...", 0);
+
+		// 6. Call the OpenAI API once with the entire JSON map.
+		let responseJSON: Record<string, string>;
+		try {
+			responseJSON = await this.callOpenAI(prompt);
+		} catch (error: any) {
+			loadingNotice.hide();
+			console.error('API call failed: ' + error.message);
+			new Notice('API call failed: ' + error.message);
+			return;
+		}
+
+		// 7. Build the output markdown block.
+		const outputBlock = this.buildOutputBlock(responseJSON, this.settings.horizontalRules);
+
+		// 8. Insert the output block by looking for a placeholder marker.
+		// Define a unique placeholder marker.
+		const placeholder = "<!OTD>";
+		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!activeView) {
+			loadingNotice.hide();
+			new Notice('No active editor found.');
+			return;
+		}
+		const editor = (activeView as MarkdownView).editor;
+		const currentContent = editor.getValue();
+		let newContent = "";
+
+		if (currentContent.includes(placeholder)) {
+			// Replace the placeholder with the output block.
+			newContent = currentContent.replace(placeholder, outputBlock);
+			editor.setValue(newContent);
+		} else {
+			// If no placeholder is found, place block at cursor location
+			editor.replaceSelection(outputBlock);
+		}
+
+		editor.setValue(newContent);
+
+		// 9. Hide the loading notice and show a completion notice.
+		loadingNotice.hide();
+		new Notice('On This Day summaries inserted.');
 	}
-}
 
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
+	//
+	// Construct the API Prompt
+	//
+	constructPrompt(yearToContent: Record<string, string>, inputDateString: string): string {
+		const promptInstructions = aiPrompt
+		const dataString = JSON.stringify(yearToContent);
+		return `${promptInstructions}\n\nData:\n${dataString}`;
 	}
 
-	display(): void {
-		const {containerEl} = this;
+	//
+	// Call the OpenAI API
+	//
+	async callOpenAI(prompt: string): Promise<Record<string, string>> {
+		const client = new OpenAI({
+			apiKey: this.settings.openaiApiKey,
+			dangerouslyAllowBrowser: true
+		});
+	
+		try {
+			const response = await client.chat.completions.create({
+				model: this.settings.model,
+				messages: [
+					{
+						role: 'system',
+						content:
+							'You are a helpful assistant that summarizes daily journal entries in a strict JSON format.',
+					},
+					{
+						role: 'user',
+						content: prompt,
+					},
+				],
+				temperature: 0.2,
+			});
+	
+			// Validate the response structure
+			if (
+				!response.choices ||
+				response.choices.length === 0 ||
+				!response.choices[0].message?.content
+			) {
+				throw new Error('No valid response received from OpenAI.');
+			}
+	
+			const content = response.choices[0].message.content;
+			try {
+				const result = JSON.parse(content);
+				return result;
+			} catch (parseError: any) {
+				console.error('Failed to parse JSON from OpenAI response:', parseError);
+				throw new Error(
+					'Failed to parse JSON from OpenAI response: ' + parseError.message
+				);
+			}
+		} catch (error: any) {
+			console.error('OpenAI API error:', error);
+			throw new Error('OpenAI API error: ' + error.message);
+		}
+	}
 
-		containerEl.empty();
+	//
+	// Build the Output Markdown
+	//
+	buildOutputBlock(summaries: Record<string, string>, horizontalRules: string): string {
+		// Add horizontal rules based on settings
+		let output = '## On This Day...\n';
+		if (horizontalRules.includes('Above')) {
+			output = '---\n## On This Day...\n'
+		}
 
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
+		// Optionally, sort the years in descending order
+		const years = Object.keys(summaries).sort((a, b) => parseInt(b) - parseInt(a));
+		for (const year of years) {
+			output += `- **${year}:** ${summaries[year]}\n`;
+		}
+		if (horizontalRules.includes('Below')) {
+			output += "\n---"
+		}
+		return output;
+	}
+
+	addPlaceholder() {
+		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!activeView) {
+			new Notice('No active editor found.');
+			return;
+		}
+		const editor = (activeView as MarkdownView).editor;
+		editor.replaceSelection('<!OTD>');
 	}
 }
