@@ -1,5 +1,8 @@
 # on-this-day-i
 This plugin for Obsidian adds AI commands for daily journals.
+
+![](https://github.com/benstuart0/on-this-day-i-obsidian/blob/e9f8ad5cb0165089f8bcb8717d4a0a7d033192b7/on-this-day-i-demo.gif)
+
 ## Features
 This plugin comes with two commands.
 ### Add Placeholder at Cursor
@@ -12,6 +15,7 @@ Uses AI to find Daily Notes from the same date as your current note in years pas
 - If you want the output to be placed at a certain location in your note, add a placeholder (default is <!OTDI>, can be changed in settings). Run the `On This Day I: Add Placeholder at Cursor` command if you'd like to automatically add a placeholder to your note at cursor location.
 - Run the command `On This Day I: Generate Through The Years` to generate your yearly insights.
 ### OpenAI
+- **This plugin makes a network call to the OpenAI API to generate the journal summaries.**
 - Must have OpenAI API key. See [platform.openai.com](https://platform.openai.com/). Add this key to plugin settings.
 - Model can be adjusted. Currently support gpt-3.5-turbo and gpt-4. Older models will be cheaper and often faster, but newer models will have higher quality outputs.
 ### Through the Years Date Requirements
