@@ -1,5 +1,8 @@
 # on-this-day-i
 This plugin for Obsidian adds AI commands for daily journals.
+
+![](https://github.com/benstuart0/on-this-day-i-obsidian/blob/e9f8ad5cb0165089f8bcb8717d4a0a7d033192b7/on-this-day-i-demo.gif)
+
 ## Features
 This plugin comes with two commands.
 ### Add Placeholder at Cursor
