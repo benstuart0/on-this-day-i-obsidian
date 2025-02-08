@@ -1,15 +1,11 @@
 import { MarkdownView, Notice, Plugin, TFolder } from "obsidian";
 import OpenAI from "openai";
-import {
-	OnThisDayPluginSettings,
-	DEFAULT_SETTINGS,
-} from "src/settings";
+import { OnThisDayPluginSettings, DEFAULT_SETTINGS } from "src/settings";
 import OnThisDaySettingTab from "src/OnThisDaySettingTab";
-import aiPrompt from "src/prompt";
-import {
-	isValidDateString,
-	parseDateFromString
-} from 'src/dateUtils'
+import { sysPrompt, constructPrompt } from "src/prompt";
+import { isValidDateString, parseDateFromString } from "src/dateUtils";
+import { getMarkdownFilesInFolder, buildOutputBlock } from "src/markdownUtils";
+import { threadId } from "worker_threads";
 
 export default class OnThisDayPlugin extends Plugin {
 	settings: OnThisDayPluginSettings;
@@ -20,7 +16,7 @@ export default class OnThisDayPlugin extends Plugin {
 
 		this.addCommand({
 			id: "on-this-day-i:on-this-day-placeholder",
-			name: "Add Placeholder",
+			name: "Add Placeholder at Cursor",
 			callback: async () => {
 				await this.addPlaceholder();
 			},
@@ -51,7 +47,7 @@ export default class OnThisDayPlugin extends Plugin {
 	// Main Function: Generate Date Summaries
 	//
 	async generateDateSummaries() {
-		// 1. Ensure the command is run from a file with a valid date as its title.
+		// Ensure the command is run from a file with a valid date as its title.
 		const activeFile = this.app.workspace.getActiveFile();
 		if (!activeFile) {
 			new Notice("No active file found.");
@@ -66,7 +62,7 @@ export default class OnThisDayPlugin extends Plugin {
 
 		const inputDateString = activeFile.basename;
 
-		// 2. Parse the input date to extract month and day (ignoring the year)
+		// Parse the input date to extract month and day (ignoring the year)
 		const parsedDate = parseDateFromString(
 			inputDateString,
 			this.settings.dateFormat
@@ -79,7 +75,7 @@ export default class OnThisDayPlugin extends Plugin {
 		const day = parsedDate.getDate();
 		const currentYear = parsedDate.getFullYear();
 
-		// 3. Search through the daily notes folder for matching files
+		// Get the folder object for the daily notes folder.
 		const folder = this.app.vault.getAbstractFileByPath(
 			this.settings.dailyNotesFolder
 		);
@@ -87,15 +83,8 @@ export default class OnThisDayPlugin extends Plugin {
 			new Notice("Daily notes folder not found.");
 			return;
 		}
-
-		// Get all Markdown files in the daily notes folder
-		const files = this.app.vault
-			.getFiles()
-			.filter(
-				(file) =>
-					file.path.startsWith(this.settings.dailyNotesFolder) &&
-					file.extension === "md"
-			);
+		// Get all files in the folder
+		const files = getMarkdownFilesInFolder(folder);
 
 		// Build a map: year => concatenated content of matching daily notes
 		let yearToContent: Record<string, string> = {};
@@ -125,13 +114,12 @@ export default class OnThisDayPlugin extends Plugin {
 			return;
 		}
 
-		// 4. Construct the API prompt that instructs GPT-4 to produce a JSON summary mapping.
-		const prompt = this.constructPrompt(yearToContent, inputDateString);
+		const prompt = constructPrompt(yearToContent, this.settings.customPrompt);
 
-		// 5. Show a loading indicator (persistent notice) until work is done.
+		// Show a loading indicator (persistent notice) until work is done.
 		const loadingNotice = new Notice("Generating summaries...", 0);
 
-		// 6. Call the OpenAI API once with the entire JSON map.
+		// Call the OpenAI API once with the entire JSON map.
 		let responseJSON: Record<string, string>;
 		try {
 			responseJSON = await this.callOpenAI(prompt);
@@ -142,12 +130,17 @@ export default class OnThisDayPlugin extends Plugin {
 			return;
 		}
 
-		// 7. Build the output markdown block.
-		const outputBlock = this.buildOutputBlock(responseJSON);
+		// Build the output markdown block.
+		const outputBlock = buildOutputBlock(
+			responseJSON,
+			inputDateString,
+			this.settings.dateFormat,
+			this.settings.horizontalRules,
+			this.settings.throughTheYearsHeader
+		);
 
-		// 8. Insert the output block by looking for a placeholder marker.
-		// Define a unique placeholder marker.
-		const placeholder = "<!OTD>";
+		// Insert the output block by looking for a placeholder marker defined in settings.
+		const placeholder = this.settings.placeholder;
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!activeView) {
 			loadingNotice.hide();
@@ -173,15 +166,6 @@ export default class OnThisDayPlugin extends Plugin {
 	}
 
 	//
-	// Construct the API Prompt, add user setting if needed
-	//
-	constructPrompt(yearToContent: Record<string, string>): string {
-		const promptInstructions = aiPrompt + this.settings.customPrompt;
-		const dataString = JSON.stringify(yearToContent);
-		return `${promptInstructions}\n\nData:\n${dataString}`;
-	}
-
-	//
 	// Call the OpenAI API
 	//
 	async callOpenAI(prompt: string): Promise<Record<string, string>> {
@@ -196,8 +180,7 @@ export default class OnThisDayPlugin extends Plugin {
 				messages: [
 					{
 						role: "system",
-						content:
-							"You are a helpful assistant that summarizes daily journal entries in a strict JSON format.",
+						content: sysPrompt,
 					},
 					{
 						role: "user",
@@ -236,29 +219,6 @@ export default class OnThisDayPlugin extends Plugin {
 		}
 	}
 
-	//
-	// Build the Output Markdown
-	//
-	buildOutputBlock(summaries: Record<string, string>): string {
-		// Add horizontal rules based on settings
-		let output = "## On This Day...\n";
-		if (this.settings.horizontalRules.includes("Above")) {
-			output = "---\n## On This Day...\n";
-		}
-
-		// Optionally, sort the years in descending order
-		const years = Object.keys(summaries).sort(
-			(a, b) => parseInt(b) - parseInt(a)
-		);
-		for (const year of years) {
-			output += `- **${year}:** ${summaries[year]}\n`;
-		}
-		if (this.settings.horizontalRules.includes("Below")) {
-			output += "\n---";
-		}
-		return output;
-	}
-
 	addPlaceholder() {
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!activeView) {
@@ -266,6 +226,6 @@ export default class OnThisDayPlugin extends Plugin {
 			return;
 		}
 		const editor = (activeView as MarkdownView).editor;
-		editor.replaceSelection("<!OTD>");
+		editor.replaceSelection(this.settings.placeholder);
 	}
 }

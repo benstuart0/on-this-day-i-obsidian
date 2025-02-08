@@ -8,6 +8,8 @@ export interface OnThisDayPluginSettings {
 	dateFormat: string;
 	horizontalRules: string;
 	customPrompt: string;
+	placeholder: string;
+	throughTheYearsHeader: string;
 }
 
 export const DEFAULT_SETTINGS: OnThisDayPluginSettings = {
@@ -17,4 +19,6 @@ export const DEFAULT_SETTINGS: OnThisDayPluginSettings = {
 	dateFormat: "MMMM D, YYYY",
 	horizontalRules: "",
 	customPrompt: "",
+	placeholder: "<!OTDI>",
+	throughTheYearsHeader: "On This Day"
 };

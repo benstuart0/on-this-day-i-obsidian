@@ -2,9 +2,6 @@ import { App, PluginSettingTab, Setting, TFolder } from "obsidian";
 import moment from "moment";
 import OnThisDayPlugin from "main";
 
-//
-// Settings Tab
-//
 export default class OnThisDaySettingTab extends PluginSettingTab {
 	plugin: OnThisDayPlugin;
 
@@ -16,9 +13,8 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		containerEl.createEl("h2", { text: "On This Day AI Settings" });
+		containerEl.createEl("h2", { text: "General Settings" });
 
-		// Date Format Setting with dynamic example using the current setting
 		const dateSetting = new Setting(containerEl)
 			.setName("Date Format")
 			.setDesc(
@@ -40,7 +36,6 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 					});
 			});
 
-		// Daily Notes Folder Setting
 		new Setting(containerEl)
 			.setName("Daily Notes Folder")
 			.setDesc("Select the folder where your daily notes are stored.")
@@ -67,35 +62,6 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 				});
 			});
 
-		// OpenAI API Key Setting
-		new Setting(containerEl)
-			.setName("OpenAI API Key")
-			.setDesc("Your OpenAI API key.")
-			.addText((text) =>
-				text
-					.setPlaceholder("sk-...")
-					.setValue(this.plugin.settings.openaiApiKey)
-					.onChange(async (value) => {
-						this.plugin.settings.openaiApiKey = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		// Model Version Dropdown Setting
-		new Setting(containerEl)
-			.setName("Model Version")
-			.setDesc("Select the OpenAI model to use.")
-			.addDropdown((dropdown) => {
-				dropdown.addOption("gpt-3.5-turbo", "gpt-3.5-turbo");
-				dropdown.addOption("gpt-4", "gpt-4");
-				dropdown.setValue(this.plugin.settings.model);
-				dropdown.onChange(async (value: string) => {
-					this.plugin.settings.model = value;
-					await this.plugin.saveSettings();
-				});
-			});
-
-		// Horizontal Rules dropdown (above, below, none, both)
 		new Setting(containerEl)
 			.setName("Horizontal Lines")
 			.setDesc(
@@ -113,17 +79,73 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 				});
 			});
 
-		// Custom instructions
 		new Setting(containerEl)
 			.setName("Custom Prompt Details")
 			.setDesc(
-				"Add custom details to the prompt if you prefer. E.g, Please prioritize things I accomplished or Only tell me positive things"
+				"Add custom details to the prompt if you prefer. E.g., Please prioritize things I accomplished or only tell me positive things."
 			)
-			.addText((text) =>
-				text
+			.addTextArea((textArea) => {
+				textArea
 					.setValue(this.plugin.settings.customPrompt)
 					.onChange(async (value) => {
 						this.plugin.settings.customPrompt = value;
+						await this.plugin.saveSettings();
+					});
+				// Optionally adjust the textarea appearance, e.g., set a fixed number of rows:
+				textArea.inputEl.rows = 5;
+			});
+
+		new Setting(containerEl)
+			.setName("Placeholder Tag")
+			.setDesc(
+				"The plugin will search for this text in your active file to replace with its return block. Otherwise outputs at cursor. Default <!OTDI>"
+			)
+			.addText((text) =>
+				text
+					.setValue(this.plugin.settings.placeholder)
+					.onChange(async (value) => {
+						this.plugin.settings.placeholder = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Through the Years Output Header")
+			.setDesc(
+				"How do you want to title the output block of the Through the Years command? The default is `On This Day`"
+			)
+			.addText((text) =>
+				text
+					.setValue(this.plugin.settings.throughTheYearsHeader)
+					.onChange(async (value) => {
+						this.plugin.settings.throughTheYearsHeader = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		containerEl.createEl("h2", { text: "OpenAI Settings" });
+		new Setting(containerEl)
+			.setName("Model Version")
+			.setDesc("Select the OpenAI model to use.")
+			.addDropdown((dropdown) => {
+				dropdown.addOption("gpt-3.5-turbo", "gpt-3.5-turbo");
+				dropdown.addOption("gpt-4", "gpt-4");
+				dropdown.setValue(this.plugin.settings.model);
+				dropdown.onChange(async (value: string) => {
+					this.plugin.settings.model = value;
+					await this.plugin.saveSettings();
+				});
+			});
+
+		new Setting(containerEl)
+			.setName("OpenAI API Key")
+			.setDesc("Your OpenAI API key.")
+			.addText((text) =>
+				text
+					.setPlaceholder("sk-...")
+					.setValue(this.plugin.settings.openaiApiKey)
+					.onChange(async (value) => {
+						this.plugin.settings.openaiApiKey = value;
 						await this.plugin.saveSettings();
 					})
 			);

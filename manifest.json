@@ -3,7 +3,7 @@
 	"name": "On This Day I",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Use AI to remind yourself what has happened on this date in past years.",
+	"description": "AI tools for Daily Journals",
 	"author": "Ben Stuart",
 	"authorUrl": "https://github.com/benstuart0/on-this-day-i-obsidian-plugin",
 	"fundingUrl": "",

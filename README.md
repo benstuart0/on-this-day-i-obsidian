@@ -1,94 +1,31 @@
-# Obsidian Sample Plugin
-
-This is a sample plugin for Obsidian (https://obsidian.md).
-
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
-
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
-
-## First time developing plugins?
-
-Quick starting guide for new plugin devs:
-
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
-
-## Releasing new releases
-
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
-
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
-
-## Adding your plugin to the community plugin list
-
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
-
-## How to use
-
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
-```
-
-If you have multiple URLs, you can also do:
-
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
-
-## API Documentation
-
-See https://github.com/obsidianmd/obsidian-api
+# on-this-day-i
+This plugin for Obsidian adds AI commands for daily journals.
+## Features
+This plugin comes with two commands.
+### Add Placeholder at Cursor
+Adds a custom tag at your cursor location which the generation command looks for and replaces if it is available. The tag can be changed in settings.
+### Generate Through The Years
+Uses AI to find Daily Notes from the same date as your current note in years past. Generates a brief summary of this date for each instance of it through the years and places it in your note.
+## How to Use
+- Enable the plugin in the settings menu and update the plugin settings accordingly
+- Open the command palette and search for On This Day I to see the commands.
+- If you want the output to be placed at a certain location in your note, add a placeholder (default is <!OTDI>, can be changed in settings). Run the `On This Day I: Add Placeholder at Cursor` command if you'd like to automatically add a placeholder to your note at cursor location.
+- Run the command `On This Day I: Generate Through The Years` to generate your yearly insights.
+### OpenAI
+- Must have OpenAI API key. See [platform.openai.com](https://platform.openai.com/). Add this key to plugin settings.
+- Model can be adjusted. Currently support gpt-3.5-turbo and gpt-4. Older models will be cheaper and often faster, but newer models will have higher quality outputs.
+### Through the Years Date Requirements
+- Must be run from a note with a valid Date format. Update the date format in settings to match your daily note format.
+- Daily notes must all follow the same date format (e.g, MMMM D, YYYY would be something like February 6, 2025)
+- There must be at least one other daily note from this day in a past year.
+## How to Install
+### From within Obsidian
+You can activate this plugin within Obsidian by doing the following:
+- Open Settings > Third-party plugin
+- Make sure Safe mode is **off**
+- Click Browse community plugins
+- Search for "On This Day I"
+- Click Install
+- Once installed, close the community plugins window and activate the newly installed plugin
+## Obsidian Mobile
+When using Obsidian on a mobile device, open the command palette to access the On This Day I plugin commands.
