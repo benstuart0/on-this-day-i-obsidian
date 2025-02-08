@@ -5,7 +5,6 @@ import OnThisDaySettingTab from "src/OnThisDaySettingTab";
 import { sysPrompt, constructPrompt } from "src/prompt";
 import { isValidDateString, parseDateFromString } from "src/dateUtils";
 import { getMarkdownFilesInFolder, buildOutputBlock } from "src/markdownUtils";
-import { threadId } from "worker_threads";
 
 export default class OnThisDayPlugin extends Plugin {
 	settings: OnThisDayPluginSettings;
@@ -15,7 +14,7 @@ export default class OnThisDayPlugin extends Plugin {
 		this.addSettingTab(new OnThisDaySettingTab(this.app, this));
 
 		this.addCommand({
-			id: "on-this-day-i:on-this-day-placeholder",
+			id: "on-this-day-placeholder",
 			name: "Add Placeholder at Cursor",
 			callback: async () => {
 				await this.addPlaceholder();
@@ -23,7 +22,7 @@ export default class OnThisDayPlugin extends Plugin {
 		});
 
 		this.addCommand({
-			id: "on-this-day-i:generate-date-summaries",
+			id: "generate-date-summaries",
 			name: "Generate Through The Years",
 			callback: async () => {
 				await this.generateDateSummaries();
@@ -114,7 +113,10 @@ export default class OnThisDayPlugin extends Plugin {
 			return;
 		}
 
-		const prompt = constructPrompt(yearToContent, this.settings.customPrompt);
+		const prompt = constructPrompt(
+			yearToContent,
+			this.settings.customPrompt
+		);
 
 		// Show a loading indicator (persistent notice) until work is done.
 		const loadingNotice = new Notice("Generating summaries...", 0);
