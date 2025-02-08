@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import {
 	OnThisDayPluginSettings,
 	DEFAULT_SETTINGS,
-} from "src/OnThisDayPluginSettings";
+} from "src/settings";
 import OnThisDaySettingTab from "src/OnThisDaySettingTab";
 import aiPrompt from "src/prompt";
 import {
@@ -11,9 +11,6 @@ import {
 	parseDateFromString
 } from 'src/dateUtils'
 
-//
-// Main Plugin Class
-//
 export default class OnThisDayPlugin extends Plugin {
 	settings: OnThisDayPluginSettings;
 
@@ -22,7 +19,7 @@ export default class OnThisDayPlugin extends Plugin {
 		this.addSettingTab(new OnThisDaySettingTab(this.app, this));
 
 		this.addCommand({
-			id: "on-this-day-ai:on-this-day-placeholder",
+			id: "on-this-day-i:on-this-day-placeholder",
 			name: "Add Placeholder",
 			callback: async () => {
 				await this.addPlaceholder();
@@ -30,7 +27,7 @@ export default class OnThisDayPlugin extends Plugin {
 		});
 
 		this.addCommand({
-			id: "on-this-day-ai:generate-date-summaries",
+			id: "on-this-day-i:generate-date-summaries",
 			name: "Generate Through The Years",
 			callback: async () => {
 				await this.generateDateSummaries();
@@ -178,10 +175,7 @@ export default class OnThisDayPlugin extends Plugin {
 	//
 	// Construct the API Prompt, add user setting if needed
 	//
-	constructPrompt(
-		yearToContent: Record<string, string>,
-		inputDateString: string
-	): string {
+	constructPrompt(yearToContent: Record<string, string>): string {
 		const promptInstructions = aiPrompt + this.settings.customPrompt;
 		const dataString = JSON.stringify(yearToContent);
 		return `${promptInstructions}\n\nData:\n${dataString}`;

@@ -1,11 +1,11 @@
 {
-	"id": "on-this-day-ai-obsidian-plugin",
-	"name": "On This Day AI",
+	"id": "on-this-day-i-obsidian-plugin",
+	"name": "On This Day I",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "Use AI to remind yourself what has happened on this date in past years.",
 	"author": "Ben Stuart",
-	"authorUrl": "https://github.com/benstuart0/on-this-day-ai-obsidian-plugin",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"authorUrl": "https://github.com/benstuart0/on-this-day-i-obsidian-plugin",
+	"fundingUrl": "",
 	"isDesktopOnly": false
 }
