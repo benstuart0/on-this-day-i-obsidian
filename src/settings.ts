@@ -2,8 +2,10 @@
 // Settings Interfaces & Defaults
 //
 export interface OnThisDayPluginSettings {
+	// OpenAI settings
 	openaiApiKey: string;
 	model: string;
+	// General settings
 	dailyNotesFolder: string;
 	dateFormat: string;
 	horizontalRules: string;
@@ -11,6 +13,8 @@ export interface OnThisDayPluginSettings {
 	placeholder: string;
 	throughTheYearsHeader: string;
 	shouldOutputLinkToNotes: boolean;
+	// Health estimate settings
+	dietEstimatePlaceholder: string;
 }
 
 export const DEFAULT_SETTINGS: OnThisDayPluginSettings = {
@@ -22,5 +26,6 @@ export const DEFAULT_SETTINGS: OnThisDayPluginSettings = {
 	customPrompt: "",
 	placeholder: "<!OTDI>",
 	throughTheYearsHeader: "On This Day",
-	shouldOutputLinkToNotes: true
+	shouldOutputLinkToNotes: true,
+	dietEstimatePlaceholder: "<!OTDI diet>"
 };

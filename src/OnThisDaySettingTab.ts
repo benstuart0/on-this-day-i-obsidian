@@ -45,7 +45,7 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 				// Get all files from the vault and filter for folders
 				const allFolders = this.app.vault
 					.getAllLoadedFiles()
-					.filter((f) => f instanceof TFolder) as TFolder[];
+					.filter((f): f is TFolder => f instanceof TFolder);
 				// Populate the folderOptions with folder paths
 				allFolders.forEach((folder) => {
 					folderOptions[folder.path] = folder.path;
@@ -122,10 +122,12 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 			);
-		
+
 		new Setting(containerEl)
 			.setName("Link to yearly notes in output")
-			.setDesc("If enabled, includes [[]] style links to previous years' notes in output block")
+			.setDesc(
+				"If enabled, includes [[]] style links to previous years' notes in output block"
+			)
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.shouldOutputLinkToNotes)
@@ -158,6 +160,21 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.openaiApiKey)
 					.onChange(async (value) => {
 						this.plugin.settings.openaiApiKey = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		containerEl.createEl("h2", { text: "Health Estimate Settings" });
+		new Setting(containerEl)
+			.setName("Health Estimates Placeholder Tag")
+			.setDesc(
+				"The plugin will search for this text in your active file to replace with its return block. Otherwise outputs at cursor. Default <!OTDI health>"
+			)
+			.addText((text) =>
+				text
+					.setValue(this.plugin.settings.dietEstimatePlaceholder)
+					.onChange(async (value) => {
+						this.plugin.settings.dietEstimatePlaceholder = value;
 						await this.plugin.saveSettings();
 					})
 			);

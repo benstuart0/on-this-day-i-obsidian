@@ -2,9 +2,13 @@ import { MarkdownView, Notice, Plugin, TFolder } from "obsidian";
 import OpenAI from "openai";
 import { OnThisDayPluginSettings, DEFAULT_SETTINGS } from "src/settings";
 import OnThisDaySettingTab from "src/OnThisDaySettingTab";
-import { sysPrompt, constructPrompt } from "src/prompt";
+import { sysPrompt, constructPrompt, constructDietPrompt } from "src/prompt";
 import { isValidDateString, parseDateFromString } from "src/dateUtils";
-import { getMarkdownFilesInFolder, buildOutputBlock } from "src/markdownUtils";
+import {
+	getMarkdownFilesInFolder,
+	buildOutputBlock,
+	buildHealthOutputBlock,
+} from "src/markdownUtils";
 
 export default class OnThisDayPlugin extends Plugin {
 	settings: OnThisDayPluginSettings;
@@ -14,10 +18,18 @@ export default class OnThisDayPlugin extends Plugin {
 		this.addSettingTab(new OnThisDaySettingTab(this.app, this));
 
 		this.addCommand({
-			id: "on-this-day-placeholder",
-			name: "Add Placeholder at Cursor",
+			id: "through-the-years-placeholder",
+			name: "Add Through The Years Placeholder at Cursor",
 			callback: () => {
-				this.addPlaceholder();
+				this.addThroughTheYearsPlaceholder();
+			},
+		});
+
+		this.addCommand({
+			id: "diet-estimates-placeholder",
+			name: "Add Diet Estimates Placeholder at Cursor",
+			callback: () => {
+				this.addDietEstimatesPlaceholder();
 			},
 		});
 
@@ -26,6 +38,14 @@ export default class OnThisDayPlugin extends Plugin {
 			name: "Generate Through The Years",
 			callback: async () => {
 				await this.generateDateSummaries();
+			},
+		});
+
+		this.addCommand({
+			id: "diet-estimates",
+			name: "Generate Diet Estimates",
+			callback: async () => {
+				await this.generateDietEstimates();
 			},
 		});
 	}
@@ -42,9 +62,6 @@ export default class OnThisDayPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	//
-	// Main Function: Generate Date Summaries
-	//
 	async generateDateSummaries() {
 		// Ensure the command is run from a file with a valid date as its title.
 		const activeFile = this.app.workspace.getActiveFile();
@@ -168,9 +185,97 @@ export default class OnThisDayPlugin extends Plugin {
 		new Notice("On This Day summaries inserted.");
 	}
 
-	//
-	// Call the OpenAI API
-	//
+	async generateDietEstimates() {
+		const activeFile = this.app.workspace.getActiveFile();
+		if (!activeFile) {
+			new Notice("No active file found.");
+			return;
+		}
+
+		// Read the file content.
+		const content = await this.app.vault.read(activeFile);
+
+		// Define keywords that typically indicate food or meal entries.
+		const foodKeywords = [
+			"breakfast",
+			"lunch",
+			"dinner",
+			"snack",
+			"mid-day",
+			"food",
+			"ate",
+			"eating",
+			"protein",
+		];
+		// Split the note into lines and filter lines that include any of these keywords.
+		const foodLines = content
+			.split("\n")
+			.filter((line) =>
+				foodKeywords.some((keyword) =>
+					line.toLowerCase().includes(keyword)
+				)
+			)
+			.join("\n");
+
+		// (Optionally, if no lines are found, notify the user.)
+		if (!foodLines) {
+			new Notice("No food-related details found in the note.");
+			return;
+		}
+
+		// Build the prompt for the OpenAI API.
+		const prompt = constructDietPrompt(foodLines);
+
+		// Show loading indicator
+		const loadingNotice = new Notice(
+			"Calculating diet estimates... Please wait.",
+			0
+		);
+
+		// Call the OpenAI API
+		let responseJSON: Record<string, any>;
+		try {
+			responseJSON = await this.callOpenAI(prompt);
+		} catch (error: any) {
+			loadingNotice.hide();
+			console.error("Diet estimates calculation failed:", error);
+			new Notice("Diet estimates calculation failed: " + error.message);
+			return;
+		}
+
+		loadingNotice.hide();
+		new Notice("Diet estimates calculated!");
+
+		console.log("RESPONSE:\n", responseJSON);
+
+		// Build the output markdown block.
+		const outputBlock = buildHealthOutputBlock(
+			responseJSON.calories,
+			responseJSON.protein,
+			responseJSON.carbs,
+			responseJSON.fats,
+			responseJSON.est_deficit
+		);
+
+		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!activeView) {
+			loadingNotice.hide();
+			new Notice("No active editor found.");
+			return;
+		}
+		const editor = (activeView as MarkdownView).editor;
+
+		// Insert the output block at a placeholder if available, else at cursor location
+		const placeholder = this.settings.dietEstimatePlaceholder;
+		if (content.includes(placeholder)) {
+			const newContent = content.replace(placeholder, outputBlock);
+			editor.setValue(newContent);
+		} else {
+			editor.replaceSelection(outputBlock);
+		}
+		new Notice("Diet estimates inserted into the note.");
+	}
+
 	async callOpenAI(prompt: string): Promise<Record<string, string>> {
 		const client = new OpenAI({
 			apiKey: this.settings.openaiApiKey,
@@ -218,7 +323,7 @@ export default class OnThisDayPlugin extends Plugin {
 		}
 	}
 
-	addPlaceholder() {
+	addThroughTheYearsPlaceholder() {
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!activeView) {
 			new Notice("No active editor found.");
@@ -226,5 +331,15 @@ export default class OnThisDayPlugin extends Plugin {
 		}
 		const editor = (activeView as MarkdownView).editor;
 		editor.replaceSelection(this.settings.placeholder);
+	}
+
+	addDietEstimatesPlaceholder() {
+		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!activeView) {
+			new Notice("No active editor found.");
+			return;
+		}
+		const editor = (activeView as MarkdownView).editor;
+		editor.replaceSelection(this.settings.dietEstimatePlaceholder);
 	}
 }

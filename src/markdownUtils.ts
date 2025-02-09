@@ -56,3 +56,20 @@ export function buildOutputBlock(
 
 	return output;
 }
+
+export function buildHealthOutputBlock(
+	calories: string,
+	protein: string,
+	carbs: string,
+	fats: string,
+	deficit: string
+): string {
+	const outputBlock = 
+`\`\`\`dietEstimates
+calories: ${calories}
+protein: ${protein}
+carbs: ${carbs}
+fats: ${fats}
+\`\`\``;
+	return outputBlock;
+}
