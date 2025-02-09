@@ -10,6 +10,7 @@ export interface OnThisDayPluginSettings {
 	customPrompt: string;
 	placeholder: string;
 	throughTheYearsHeader: string;
+	shouldOutputLinkToNotes: boolean;
 }
 
 export const DEFAULT_SETTINGS: OnThisDayPluginSettings = {
@@ -20,5 +21,6 @@ export const DEFAULT_SETTINGS: OnThisDayPluginSettings = {
 	horizontalRules: "",
 	customPrompt: "",
 	placeholder: "<!OTDI>",
-	throughTheYearsHeader: "On This Day"
+	throughTheYearsHeader: "On This Day",
+	shouldOutputLinkToNotes: true
 };

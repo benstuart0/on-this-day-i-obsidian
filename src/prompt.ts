@@ -12,7 +12,6 @@ export function constructPrompt(
 	customPrompt: string
 ): string {
 	const promptInstructions = userPrompt + customPrompt;
-	console.log(promptInstructions);
 	const dataString = JSON.stringify(yearToContent);
 	return `${promptInstructions}\n\nData:\n${dataString}`;
 }

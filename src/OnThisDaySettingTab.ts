@@ -122,6 +122,18 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 			);
+		
+		new Setting(containerEl)
+			.setName("Link to yearly notes in output")
+			.setDesc("If enabled, includes [[]] style links to previous years' notes in output block")
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.shouldOutputLinkToNotes)
+					.onChange(async (value: boolean) => {
+						this.plugin.settings.shouldOutputLinkToNotes = value;
+						await this.plugin.saveSettings();
+					})
+			);
 
 		containerEl.createEl("h2", { text: "OpenAI Settings" });
 		new Setting(containerEl)

@@ -16,8 +16,8 @@ export default class OnThisDayPlugin extends Plugin {
 		this.addCommand({
 			id: "on-this-day-placeholder",
 			name: "Add Placeholder at Cursor",
-			callback: async () => {
-				await this.addPlaceholder();
+			callback: () => {
+				this.addPlaceholder();
 			},
 		});
 
@@ -86,7 +86,7 @@ export default class OnThisDayPlugin extends Plugin {
 		const files = getMarkdownFilesInFolder(folder);
 
 		// Build a map: year => concatenated content of matching daily notes
-		let yearToContent: Record<string, string> = {};
+		const yearToContent: Record<string, string> = {};
 		for (const file of files) {
 			const fileDate = parseDateFromString(
 				file.basename,
@@ -138,7 +138,8 @@ export default class OnThisDayPlugin extends Plugin {
 			inputDateString,
 			this.settings.dateFormat,
 			this.settings.horizontalRules,
-			this.settings.throughTheYearsHeader
+			this.settings.throughTheYearsHeader,
+			this.settings.shouldOutputLinkToNotes
 		);
 
 		// Insert the output block by looking for a placeholder marker defined in settings.
@@ -206,10 +207,6 @@ export default class OnThisDayPlugin extends Plugin {
 				const result = JSON.parse(content);
 				return result;
 			} catch (parseError: any) {
-				console.error(
-					"Failed to parse JSON from OpenAI response:",
-					parseError
-				);
 				throw new Error(
 					"Failed to parse JSON from OpenAI response: " +
 						parseError.message

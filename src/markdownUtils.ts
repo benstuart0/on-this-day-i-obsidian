@@ -1,4 +1,4 @@
-import { TFile, TFolder, TAbstractFile } from "obsidian";
+import { TFile, TFolder } from "obsidian";
 import moment from 'moment';
 
 /**
@@ -21,7 +21,8 @@ export function buildOutputBlock(
 	inputDateString: string,
 	dateFormat: string,
 	horizontalRules: string,
-	throughTheYearsHeader: string
+	throughTheYearsHeader: string,
+	shouldOutputLinkToNotes: boolean
 ): string {
 	// Start with a heading using the provided header; add a horizontal rule above if specified.
 	let output = `## ${throughTheYearsHeader}\n`;
@@ -32,7 +33,7 @@ export function buildOutputBlock(
 	// Create a base moment from the input date using the configured date format.
 	const baseMoment = moment(inputDateString, dateFormat);
 
-	// Optionally, sort the years in descending order.
+	// Sort the years in descending order.
 	const years = Object.keys(summaries).sort(
 		(a, b) => parseInt(b) - parseInt(a)
 	);
@@ -41,8 +42,12 @@ export function buildOutputBlock(
 	for (const year of years) {
 		const noteMoment = baseMoment.clone().set("year", parseInt(year));
 		const formattedNoteName = noteMoment.format(dateFormat);
-		// Create a Markdown link in the form [[formattedNoteName|year]]
-		output += `- **[[${formattedNoteName}|${year}]]:** ${summaries[year]}\n`;
+		// Create a Markdown link in the form [[formattedNoteName|year]] if setting is on
+		if (shouldOutputLinkToNotes) {
+			output += `- **[[${formattedNoteName}|${year}]]:** ${summaries[year]}\n`;
+		} else {
+			output += `- **${year}:** ${summaries[year]}\n`;
+		}
 	}
 
 	if (horizontalRules.includes("Below")) {

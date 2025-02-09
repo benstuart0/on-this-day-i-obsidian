@@ -29,7 +29,7 @@ function getAllFormats(customFormat: string): string[] {
 
 export function isValidDateString(
 	dateString: string,
-	format: string = "MMMM D, YYYY"
+	format = "MMMM D, YYYY"
 ): boolean {
 	// Use strict parsing with the combined list of formats.
 	return moment(dateString, getAllFormats(format), true).isValid();
