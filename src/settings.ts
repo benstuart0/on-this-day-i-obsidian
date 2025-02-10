@@ -15,6 +15,7 @@ export interface OnThisDayPluginSettings {
 	shouldOutputLinkToNotes: boolean;
 	// Health estimate settings
 	dietEstimatePlaceholder: string;
+	foodHeader: string;
 }
 
 export const DEFAULT_SETTINGS: OnThisDayPluginSettings = {
@@ -27,5 +28,6 @@ export const DEFAULT_SETTINGS: OnThisDayPluginSettings = {
 	placeholder: "<!OTDI>",
 	throughTheYearsHeader: "On This Day",
 	shouldOutputLinkToNotes: true,
-	dietEstimatePlaceholder: "<!OTDI diet>"
+	dietEstimatePlaceholder: "<!OTDI diet>",
+	foodHeader: "### Food",
 };

@@ -102,7 +102,7 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 			)
 			.addText((text) =>
 				text
-					.setValue(this.plugin.settings.placeholder)
+					.setValue(this.plugin.settings.placeholder || "<!OTDI>")
 					.onChange(async (value) => {
 						this.plugin.settings.placeholder = value;
 						await this.plugin.saveSettings();
@@ -116,7 +116,11 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 			)
 			.addText((text) =>
 				text
-					.setValue(this.plugin.settings.throughTheYearsHeader)
+					.setValue("On This Day")
+					.setValue(
+						this.plugin.settings.throughTheYearsHeader ||
+							"On This Day"
+					)
 					.onChange(async (value) => {
 						this.plugin.settings.throughTheYearsHeader = value;
 						await this.plugin.saveSettings();
@@ -168,13 +172,32 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Health Estimates Placeholder Tag")
 			.setDesc(
-				"The plugin will search for this text in your active file to replace with its return block. Otherwise outputs at cursor. Default <!OTDI health>"
+				"The plugin will search for this text in your active file to replace with its return block. Otherwise outputs at cursor. Default <!OTDI diet>"
 			)
 			.addText((text) =>
 				text
-					.setValue(this.plugin.settings.dietEstimatePlaceholder)
+					.setPlaceholder("<!OTDI diet>")
+					.setValue(
+						this.plugin.settings.dietEstimatePlaceholder ||
+							"<!OTDI diet>"
+					)
 					.onChange(async (value) => {
 						this.plugin.settings.dietEstimatePlaceholder = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Food Section Header")
+			.setDesc(
+				"Enter the header that marks the food section in your daily note. Default is '### Food'."
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder("### Food")
+					.setValue(this.plugin.settings.foodHeader || "### Food")
+					.onChange(async (value) => {
+						this.plugin.settings.foodHeader = value;
 						await this.plugin.saveSettings();
 					})
 			);

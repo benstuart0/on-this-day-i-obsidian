@@ -192,47 +192,44 @@ export default class OnThisDayPlugin extends Plugin {
 			return;
 		}
 
-		// Read the file content.
 		const content = await this.app.vault.read(activeFile);
 
-		// Define keywords that typically indicate food or meal entries.
-		const foodKeywords = [
-			"breakfast",
-			"lunch",
-			"dinner",
-			"snack",
-			"mid-day",
-			"food",
-			"ate",
-			"eating",
-			"protein",
-		];
-		// Split the note into lines and filter lines that include any of these keywords.
-		const foodLines = content
-			.split("\n")
-			.filter((line) =>
-				foodKeywords.some((keyword) =>
-					line.toLowerCase().includes(keyword)
-				)
-			)
-			.join("\n");
+		// Find the index of the designated header (compare trimmed lines).
+		const lines = content.split("\n");
+		const headerIndex = lines.findIndex(
+			(line) => line.trim() === this.settings.foodHeader.trim()
+		);
 
-		// (Optionally, if no lines are found, notify the user.)
-		if (!foodLines) {
-			new Notice("No food-related details found in the note.");
+		if (headerIndex === -1) {
+			new Notice("Food section not found using header: " + this.settings.foodHeader);
 			return;
 		}
 
-		// Build the prompt for the OpenAI API.
-		const prompt = constructDietPrompt(foodLines);
+		// Collect all lines after the header until a new header is encountered.
+		const foodSectionLines: string[] = [];
+		for (let i = headerIndex + 1; i < lines.length; i++) {
+			if (lines[i].trim().startsWith("#")) {
+				break;
+			}
+			foodSectionLines.push(lines[i]);
+		}
 
-		// Show loading indicator
+		const foodInfo = foodSectionLines.join("\n").trim();
+
+		if (!foodInfo) {
+			new Notice(
+				"No food-related details found under the header: " + this.settings.foodHeader
+			);
+			return;
+		}
+
+		const prompt = constructDietPrompt(foodInfo);
+
 		const loadingNotice = new Notice(
 			"Calculating diet estimates... Please wait.",
 			0
 		);
 
-		// Call the OpenAI API
 		let responseJSON: Record<string, any>;
 		try {
 			responseJSON = await this.callOpenAI(prompt);
@@ -246,9 +243,6 @@ export default class OnThisDayPlugin extends Plugin {
 		loadingNotice.hide();
 		new Notice("Diet estimates calculated!");
 
-		console.log("RESPONSE:\n", responseJSON);
-
-		// Build the output markdown block.
 		const outputBlock = buildHealthOutputBlock(
 			responseJSON.calories,
 			responseJSON.protein,
