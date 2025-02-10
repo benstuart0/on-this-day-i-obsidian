@@ -3,6 +3,8 @@ This plugin for Obsidian adds AI commands for daily journals.
 
 ![](https://github.com/benstuart0/on-this-day-i-obsidian/blob/e9f8ad5cb0165089f8bcb8717d4a0a7d033192b7/on-this-day-i-demo.gif)
 
+![](https://github.com/benstuart0/on-this-day-i-obsidian/blob/8b0dfcf154b84fed450459c5b4b6c9f04eb478c8/demo_resources/diet-estimates-demo.png)
+
 ## Features
 This plugin comes with two commands:
 ### Add Placeholder at Cursor
