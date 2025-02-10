@@ -141,6 +141,27 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 					})
 			);
 
+		new Setting(containerEl)
+			.setName("Output Length (Sentences)")
+			.setDesc(
+				"Select how many sentences should each year's response be (between 1 and 8)."
+			)
+			.addDropdown((dropdown) => {
+				// Populate the dropdown with options 1 through 8.
+				for (let i = 1; i <= 8; i++) {
+					dropdown.addOption(i.toString(), i.toString());
+				}
+				// Set the current value from settings; default to 3 if not set.
+				const currentValue =
+					this.plugin.settings.outputLengthSentences || 3;
+				dropdown.setValue(currentValue.toString());
+				dropdown.onChange(async (value: string) => {
+					this.plugin.settings.outputLengthSentences =
+						parseInt(value);
+					await this.plugin.saveSettings();
+				});
+			});
+			
 		containerEl.createEl("h2", { text: "OpenAI Settings" });
 		new Setting(containerEl)
 			.setName("Model Version")

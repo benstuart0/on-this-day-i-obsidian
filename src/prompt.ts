@@ -1,12 +1,14 @@
 const userPrompt = `Below is a JSON object where each key is a year and each value is the full 
 	content of my daily journal for this day on that given year. For each year, 
-	please provide an interesting summary in 2-3 sentences that highlights the events 
-	of that day. Try to include who I spent time with (including their names), what I did, 
+	please provide an interesting summary that highlights the events 
+	of that day. The summary length for each year's summary should be the number of sentences defined at the end of this prompt. 
+	Try to include who I spent time with (including their names), what I did, 
 	and how I felt. Use second-person language (you), as you are referring to me - 
 	the writer of the journals. Do not include the date in the summary. 
 	Return only a JSON object mapping each year to its summary with no extra text, 
 	headers, or footers. This is the most important rule. The output must follow this JSON format. 
 	Further personalization details: `;
+
 
 export const sysPrompt = `You are a helpful assistant that summarizes text, 
 	based on a user's specifications, always in a strict JSON format.`;
@@ -16,11 +18,13 @@ export const sysPrompt = `You are a helpful assistant that summarizes text,
 //
 export function constructPrompt(
 	yearToContent: Record<string, string>,
-	customPrompt: string
+	customPrompt: string,
+	numberOfSentences: number
 ): string {
 	const promptInstructions = userPrompt + customPrompt;
 	const dataString = JSON.stringify(yearToContent);
-	return `${promptInstructions}\n\nData:\n${dataString}`;
+	const numberOfSentencesAppendage = `Each year's summary should be approximately ${numberOfSentences} sentences`;
+	return `${promptInstructions}\n\nData:\n${dataString}\n${numberOfSentencesAppendage}`;
 }
 
 export function constructDietPrompt(foodInfo: string): string {

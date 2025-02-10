@@ -132,7 +132,8 @@ export default class OnThisDayPlugin extends Plugin {
 
 		const prompt = constructPrompt(
 			yearToContent,
-			this.settings.customPrompt
+			this.settings.customPrompt,
+			this.settings.outputLengthSentences
 		);
 
 		// Show a loading indicator (persistent notice) until work is done.
