@@ -1,4 +1,4 @@
-import { MarkdownView, Notice, Plugin, TFolder } from "obsidian";
+import { MarkdownView, Notice, Plugin, TFolder, Editor } from "obsidian";
 import OpenAI from "openai";
 import { OnThisDayPluginSettings, DEFAULT_SETTINGS } from "src/settings";
 import OnThisDaySettingTab from "src/OnThisDaySettingTab";
@@ -17,35 +17,93 @@ export default class OnThisDayPlugin extends Plugin {
 		await this.loadSettings();
 		this.addSettingTab(new OnThisDaySettingTab(this.app, this));
 
+		// Conditions: placeholder must be defined in settings
 		this.addCommand({
 			id: "through-the-years-placeholder",
-			name: "Add Through The Years Placeholder at Cursor",
-			callback: () => {
-				this.addThroughTheYearsPlaceholder();
+			name: "Add through the years placeholder at cursor",
+			editorCheckCallback: (
+				checking: boolean,
+				editor: Editor,
+				view: MarkdownView
+			) => {
+				const placeholderIsEmpty =
+					this.settings.placeholder.trim() === "";
+				if (!placeholderIsEmpty) {
+					if (!checking) {
+						this.addThroughTheYearsPlaceholder();
+					}
+					return true;
+				}
+				return false;
 			},
 		});
 
+		// Conditions: placeholder must be defined in settings
 		this.addCommand({
 			id: "diet-estimates-placeholder",
-			name: "Add Diet Estimates Placeholder at Cursor",
-			callback: () => {
-				this.addDietEstimatesPlaceholder();
+			name: "Add diet estimates placeholder at cursor",
+			editorCheckCallback: (
+				checking: boolean,
+				editor: Editor,
+				view: MarkdownView
+			) => {
+				const placeholderIsEmpty =
+					this.settings.dietEstimatePlaceholder.trim() === "";
+				if (!placeholderIsEmpty) {
+					if (!checking) {
+						this.addDietEstimatesPlaceholder();
+					}
+					return true;
+				}
+				return false;
 			},
 		});
 
+		// Conditions: date format, daily notes folder, output header, model version, and apiKey
 		this.addCommand({
 			id: "generate-date-summaries",
-			name: "Generate Through The Years",
-			callback: async () => {
-				await this.generateDateSummaries();
+			name: "Generate through The years",
+			editorCheckCallback: (
+				checking: boolean,
+				editor: Editor,
+				view: MarkdownView
+			) => {
+				if (
+					this.settings.dateFormat.trim() != "" &&
+					this.settings.dailyNotesFolder.trim() != "" &&
+					this.settings.throughTheYearsHeader.trim() != "" &&
+					this.settings.model.trim() != "" &&
+					this.settings.openaiApiKey.trim() != ""
+				) {
+					if (!checking) {
+						this.generateDateSummaries();
+					}
+					return true;
+				}
+				return false;
 			},
 		});
 
+		// Conditions: section header, model version, and apiKey
 		this.addCommand({
 			id: "diet-estimates",
-			name: "Generate Diet Estimates",
-			callback: async () => {
-				await this.generateDietEstimates();
+			name: "Generate diet estimates",
+			editorCheckCallback: (
+				checking: boolean,
+				editor: Editor,
+				view: MarkdownView
+			) => {
+				if (
+					this.settings.foodHeader.trim() != "" &&
+					this.settings.model.trim() != "" &&
+					this.settings.openaiApiKey.trim() != ""
+				) {
+					if (!checking) {
+						this.generateDateSummaries();
+					}
+					return true;
+				}
+				return false;
 			},
 		});
 	}
@@ -202,7 +260,10 @@ export default class OnThisDayPlugin extends Plugin {
 		);
 
 		if (headerIndex === -1) {
-			new Notice("Food section not found using header: " + this.settings.foodHeader);
+			new Notice(
+				"Food section not found using header: " +
+					this.settings.foodHeader
+			);
 			return;
 		}
 
@@ -219,7 +280,8 @@ export default class OnThisDayPlugin extends Plugin {
 
 		if (!foodInfo) {
 			new Notice(
-				"No food-related details found under the header: " + this.settings.foodHeader
+				"No food-related details found under the header: " +
+					this.settings.foodHeader
 			);
 			return;
 		}

@@ -1,6 +1,6 @@
-import { App, PluginSettingTab, Setting, TFolder } from "obsidian";
-import moment from "moment";
+import { App, PluginSettingTab, Setting, TFolder, moment } from "obsidian";
 import OnThisDayPlugin from "main";
+import { FolderSuggest } from "./FolderSuggest";
 
 export default class OnThisDaySettingTab extends PluginSettingTab {
 	plugin: OnThisDayPlugin;
@@ -13,23 +13,22 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		containerEl.createEl("h2", { text: "General Settings" });
-
 		const dateSetting = new Setting(containerEl)
-			.setName("Date Format")
+			.setName("Date format")
 			.setDesc(
 				`Format for daily note filenames. Example: ${moment(
 					new Date()
 				).format(this.plugin.settings.dateFormat)}`
 			)
-			.addText((text) => {
-				text.setPlaceholder("MMMM D, YYYY")
+			.addMomentFormat((momentFormat) => {
+				momentFormat
+					.setDefaultFormat("MMMM D, YYYY")
 					.setValue(this.plugin.settings.dateFormat)
 					.onChange(async (value) => {
 						this.plugin.settings.dateFormat = value;
 						await this.plugin.saveSettings();
-						// Update the description with a new example using the updated format
 						const newExample = moment(new Date()).format(value);
+						// Update the description with a new example using the updated format
 						dateSetting.setDesc(
 							`Format for daily note filenames. Example: ${newExample}`
 						);
@@ -37,33 +36,37 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-			.setName("Daily Notes Folder")
+			.setName("Daily notes folder")
 			.setDesc("Select the folder where your daily notes are stored.")
-			.addDropdown((dropdown) => {
-				// Create an object to hold the folder options
-				const folderOptions: Record<string, string> = {};
-				// Get all files from the vault and filter for folders
-				const allFolders = this.app.vault
+			.addText((textComponent) => {
+				textComponent.setValue(
+					this.plugin.settings.dailyNotesFolder || ""
+				);
+				// Set a placeholder to prompt the user.
+				textComponent.setPlaceholder("Search for folder...");
+				// Retrieve folder options by filtering all loaded files for TFolder instances.
+				const folderOptions: string[] = this.app.vault
 					.getAllLoadedFiles()
-					.filter((f): f is TFolder => f instanceof TFolder);
-				// Populate the folderOptions with folder paths
-				allFolders.forEach((folder) => {
-					folderOptions[folder.path] = folder.path;
-				});
-				// Add each folder option to the dropdown
-				for (const key in folderOptions) {
-					dropdown.addOption(key, folderOptions[key]);
-				}
-				// Set the current value from the plugin settings
-				dropdown.setValue(this.plugin.settings.dailyNotesFolder);
-				dropdown.onChange(async (value: string) => {
-					this.plugin.settings.dailyNotesFolder = value;
-					await this.plugin.saveSettings();
-				});
+					.filter((f): f is TFolder => f instanceof TFolder)
+					.map((folder) => folder.path);
+				const folderSuggest = new FolderSuggest(
+					this.app,
+					textComponent.inputEl,
+					folderOptions
+				);
+				// Save to settings and update text when a suggestion is chosen
+				folderSuggest.onSelect(
+					(suggestion: string, evt: MouseEvent | KeyboardEvent) => {
+						textComponent.setValue(suggestion);
+						this.plugin.settings.dailyNotesFolder = suggestion;
+						this.plugin.saveSettings();
+						folderSuggest.close();
+					}
+				);
 			});
 
 		new Setting(containerEl)
-			.setName("Horizontal Lines")
+			.setName("Horizontal lines")
 			.setDesc(
 				"Would you like horizontal lines above or below the output block?"
 			)
@@ -80,7 +83,7 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-			.setName("Custom Prompt Details")
+			.setName("Custom prompt details")
 			.setDesc(
 				"Add custom details to the prompt if you prefer. E.g., Please prioritize things I accomplished or only tell me positive things."
 			)
@@ -96,7 +99,7 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-			.setName("Placeholder Tag")
+			.setName("Placeholder tag")
 			.setDesc(
 				"The plugin will search for this text in your active file to replace with its return block. Otherwise outputs at cursor. Default <!OTDI>"
 			)
@@ -110,13 +113,12 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Through the Years Output Header")
+			.setName("Through the years output header")
 			.setDesc(
 				"How do you want to title the output block of the Through the Years command? The default is `On This Day`"
 			)
 			.addText((text) =>
 				text
-					.setValue("On This Day")
 					.setValue(
 						this.plugin.settings.throughTheYearsHeader ||
 							"On This Day"
@@ -142,7 +144,7 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Output Length (Sentences)")
+			.setName("Output length (sentences)")
 			.setDesc(
 				"Select how many sentences should each year's response be (between 1 and 8)."
 			)
@@ -161,10 +163,10 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				});
 			});
-			
-		containerEl.createEl("h2", { text: "OpenAI Settings" });
+
+		new Setting(containerEl).setName("OpenAI").setHeading();
 		new Setting(containerEl)
-			.setName("Model Version")
+			.setName("Model sersion")
 			.setDesc("Select the OpenAI model to use.")
 			.addDropdown((dropdown) => {
 				dropdown.addOption("gpt-3.5-turbo", "gpt-3.5-turbo");
@@ -177,8 +179,8 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-			.setName("OpenAI API Key")
-			.setDesc("Your OpenAI API key.")
+			.setName("OpenAI api key")
+			.setDesc("Your OpenAI api key.")
 			.addText((text) =>
 				text
 					.setPlaceholder("sk-...")
@@ -189,9 +191,9 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 					})
 			);
 
-		containerEl.createEl("h2", { text: "Health Estimate Settings" });
+		new Setting(containerEl).setName("Health estimates").setHeading();
 		new Setting(containerEl)
-			.setName("Health Estimates Placeholder Tag")
+			.setName("Health estimates placeholder tag")
 			.setDesc(
 				"The plugin will search for this text in your active file to replace with its return block. Otherwise outputs at cursor. Default <!OTDI diet>"
 			)
@@ -209,7 +211,7 @@ export default class OnThisDaySettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Food Section Header")
+			.setName("Food section header")
 			.setDesc(
 				"Enter the header that marks the food section in your daily note. Default is '### Food'."
 			)
